@@ -77,7 +77,6 @@ const getAreaData = async () => {
   });
   const areaData = await res.json();
 
-  console.log(areaData);
   return areaData;
 };
 
@@ -86,7 +85,6 @@ const buildChart = async (data, hakuQuery, ehto) => {
 
   if (ehto === 0) {
     data = await getData(hakuQuery);
-    console.log("Haetaan dataa...");
   } else {
     loopLenght = 23;
   }
@@ -95,14 +93,11 @@ const buildChart = async (data, hakuQuery, ehto) => {
   const labels = Object.values(data.dimension.Vuosi.category.label);
   const values = data.value;
 
-  console.log(labels);
   alueet.forEach((alue, index) => {
     let vakiluku = [];
     for (let i = 0; i < loopLenght; i++) {
       vakiluku.push(values[i * 1 + index]);
     }
-
-    console.log(vakiluku);
 
     alueet[index] = {
       name: alue,
@@ -129,19 +124,12 @@ const submitButton = document.getElementById("submit-data");
 submitButton.addEventListener("click", async function (submitted) {
   submitted.preventDefault();
   const kunta = document.getElementById("input-area").value;
-  console.log(kunta);
 
   const uusiQuery = jsonQuery;
-  //Ensin haetaan kuntia koskeva data
 
   const areaData = await getAreaData();
   const areaCodes = Object.values(areaData.variables[1].values);
   const areaNames = Object.values(areaData.variables[1].valueTexts);
-
-  console.log(areaCodes);
-  console.log(areaNames);
-
-  //Tähän tarkistus onko kunta olemassa
 
   for (let i = 0; i <= areaNames.length; i++) {
     if (
@@ -149,7 +137,8 @@ submitButton.addEventListener("click", async function (submitted) {
     ) {
       let apuLista = [];
       apuLista.push(areaCodes[i]);
-      uusiQuery.query[1].selection.values = apuLista;
+      masterKunta = apuLista;
+      sessionStorage.setItem("masterKunta", JSON.stringify(masterKunta));
     }
   }
   masterQuery = uusiQuery;
@@ -161,12 +150,7 @@ const addDataButton = document.getElementById("add-data");
 addDataButton.addEventListener("click", async function (clicked) {
   clicked.preventDefault();
 
-  //Haetaan voimassaolevat väestöluvut
-
   const luvutNyt = Object.values(masterData.value);
-  console.log(masterData);
-
-  //Lasketaan ennuste, 1. vaihe: listataan deltat
 
   let deltaValues = [];
   for (let i = 0; i <= luvutNyt.length - 2; i++) {
@@ -174,9 +158,6 @@ addDataButton.addEventListener("click", async function (clicked) {
     deltaValues.push(uusiLuku);
   }
 
-  //2. vaihe: Lasketaan deltan keskiarvo ja lisätään viimeinen arvo
-
-  console.log(deltaValues);
   let sumDelta = 0;
 
   for (let i = 0; i < deltaValues.length; i++) {
@@ -185,22 +166,19 @@ addDataButton.addEventListener("click", async function (clicked) {
 
     sumDelta = sumDelta + apuLuku;
   }
-  console.log(sumDelta);
-  console.log("sumDelta");
 
   let trueDelta = sumDelta / deltaValues.length;
-  console.log(trueDelta);
-  const addDelta = trueDelta + luvutNyt[luvutNyt.length - 1];
 
-  console.log(addDelta);
+  const addDelta = trueDelta + luvutNyt[luvutNyt.length - 1];
 
   masterData.value.push(addDelta);
   masterData.dimension.Vuosi.category.label["2022"] = "2022";
-  console.log(masterData);
 
   buildChart(masterData, masterQuery, 1);
 });
 
 let masterData = {};
 let masterQuery = jsonQuery;
+let masterKunta = ["SSS"];
+sessionStorage.setItem("masterKunta", JSON.stringify(masterKunta));
 buildChart(masterData, masterQuery, 0);
